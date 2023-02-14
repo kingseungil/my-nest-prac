@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { NotIn } from 'src/utils/decorators/not-in';
