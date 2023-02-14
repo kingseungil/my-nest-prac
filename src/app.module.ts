@@ -11,7 +11,7 @@ import { UsersModule } from './users/users.module';
             envFilePath: [`src/config/env/.${process.env.NODE_ENV}.env`],
             load: [emailConfig],
             isGlobal: true,
-            // validationSchema,
+            validationSchema,
         }),
     ],
     controllers: [],
