@@ -1,3 +1,4 @@
+import { UsersService } from './users.service';
 import { UserLoginDto } from './dto/user-login.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Body, Controller, Post, Query, Get } from '@nestjs/common';
@@ -7,13 +8,15 @@ import { UserInfo } from './dto/user-info.dto';
 
 @Controller('users')
 export class UsersController {
+    constructor(private readonly usersService: UsersService) {}
     /**
      * 회원가입
      * @param dto
      */
     @Post()
     async createUser(@Body() dto: CreateUserDto): Promise<void> {
-        console.log(dto);
+        const { name, email, password } = dto;
+        await this.usersService.createUser(name, email, password);
     }
 
     /**
@@ -23,8 +26,8 @@ export class UsersController {
      */
     @Post('/email-verify')
     async verifyEmail(@Query() dto: VerifyEmailDto): Promise<string> {
-        console.log(dto);
-        return;
+        const { signupVerifyToken } = dto;
+        return await this.usersService.verifyEmail(signupVerifyToken);
     }
 
     /**
