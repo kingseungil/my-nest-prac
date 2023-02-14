@@ -25,6 +25,7 @@ import { UsersModule } from './users/users.module';
             // entities: [__dirname + '/**/*.entities{.ts,.js'], // FIXME: 웨 않되?
             entities: [UserEntity],
             synchronize: true,
+            logging: true,
         }),
     ],
     controllers: [],
