@@ -1,16 +1,41 @@
 import { UserInfo } from './dto/user-info.dto';
 import { EmailService } from './../email/email.service';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import * as uuid from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
+import { UserEntity } from './entities/user.entity';
+import { Repository } from 'typeorm';
+import { ulid } from 'ulid';
 
 @Injectable()
 export class UsersService {
-    constructor(private readonly emailService: EmailService) {}
-    private checkUserExists(email: string) {
-        return false; // TODO: DB 연동 후 구현
+    constructor(
+        @InjectRepository(UserEntity) private readonly usersRepository: Repository<UserEntity>, // 유저 저장소 주입
+        private readonly emailService: EmailService,
+    ) {}
+    private async checkUserExists(email: string): Promise<boolean> {
+        const user = await this.usersRepository.findOne({
+            where: { email: email },
+        });
+        if (user) {
+            return true;
+        } else {
+            return false;
+        }
     }
-    private saveUser(name: string, email: string, password: string, signupVerifyToken: string) {
-        return; // TODO: DB 연동 후 구현
+    private async saveUser(
+        name: string,
+        email: string,
+        password: string,
+        signupVerifyToken: string,
+    ) {
+        const user = new UserEntity();
+        user.id = ulid(); // 랜덤한 스트링 값 생성(ulid)
+        user.name = name;
+        user.email = email;
+        user.password = password;
+        user.signupVerifyToken = signupVerifyToken;
+        await this.usersRepository.save(user);
     }
     private async sendMemberJoinEmail(email: string, signupVerifyToken: string) {
         await this.emailService.sendMemberJoinVerification(email, signupVerifyToken);
@@ -19,7 +44,10 @@ export class UsersService {
         const signupVerifyToken = uuid.v1();
 
         // FIXME: await Promise.all 로 바꾸기?
-        await this.checkUserExists(email);
+        const userExist = await this.checkUserExists(email);
+        if (userExist) {
+            throw new UnprocessableEntityException('해당 이메일로는 가입할 수 없어용');
+        }
         await this.saveUser(name, email, password, signupVerifyToken);
         await this.sendMemberJoinEmail(email, signupVerifyToken);
     }
