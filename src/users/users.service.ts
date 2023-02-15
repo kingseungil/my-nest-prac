@@ -1,8 +1,10 @@
+import { AuthService } from './../auth/auth.service';
 import { UserInfo } from './dto/user-info.dto';
 import { EmailService } from './../email/email.service';
 import {
     Injectable,
     InternalServerErrorException,
+    NotFoundException,
     UnprocessableEntityException,
 } from '@nestjs/common';
 import * as uuid from 'uuid';
@@ -17,7 +19,20 @@ export class UsersService {
         @InjectRepository(UserEntity) private readonly usersRepository: Repository<UserEntity>, // 유저 저장소 주입
         private readonly emailService: EmailService,
         private readonly dataSource: DataSource,
+        private readonly authService: AuthService,
     ) {}
+
+    async createUser(name: string, email: string, password: string) {
+        const signupVerifyToken = uuid.v1();
+
+        // FIXME: await Promise.all 로 바꾸기?
+        const userExist = await this.checkUserExists(email);
+        if (userExist) {
+            throw new UnprocessableEntityException('해당 이메일로는 가입할 수 없어용');
+        }
+        await this.saveUser(name, email, password, signupVerifyToken);
+        await this.sendMemberJoinEmail(email, signupVerifyToken);
+    }
 
     private async checkUserExists(email: string): Promise<boolean> {
         const user = await this.usersRepository.findOne({
@@ -61,38 +76,44 @@ export class UsersService {
     private async sendMemberJoinEmail(email: string, signupVerifyToken: string) {
         await this.emailService.sendMemberJoinVerification(email, signupVerifyToken);
     }
-    async createUser(name: string, email: string, password: string) {
-        const signupVerifyToken = uuid.v1();
 
-        // FIXME: await Promise.all 로 바꾸기?
-        const userExist = await this.checkUserExists(email);
-        if (userExist) {
-            throw new UnprocessableEntityException('해당 이메일로는 가입할 수 없어용');
+    async verifyEmail(signupVerifyToken: string): Promise<string> {
+        const user = await this.usersRepository.findOne({
+            where: { signupVerifyToken },
+        });
+        if (!user) {
+            throw new NotFoundException('유저가 존재하지 않습니다');
         }
-        await this.saveUser(name, email, password, signupVerifyToken);
-        await this.sendMemberJoinEmail(email, signupVerifyToken);
+
+        return this.authService.login({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+        });
     }
+    async login(email: string, password: string): Promise<string> {
+        const user = await this.usersRepository.findOne({
+            where: { email, password },
+        });
+        if (!user) {
+            throw new NotFoundException('유저가 존재하지 않습니다');
+        }
 
-    async verifyEmail(signupVerifyToken): Promise<string> {
-        // TODO: DB, JWT 연동 후 구현
-        // 1. DB에서 인증토큰으로 회원 가입 처리중인 유저있는지 조회하고 없다면 에러처리
-        // 2. 바로 로그인 상태가 되도록 JWT발급
-
-        throw new Error('Method not implemented');
-    }
-    async login(email, password): Promise<string> {
-        // TODO: DB, JWT 연동 후 구현
-        // 1. email, password 를 가진 유저가 존재하는지 DB에서 확인 후 없다면 에러처리
-        // 2. JWT발급
-
-        throw new Error('Method not  implemented');
+        return this.authService.login({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+        });
     }
 
     async getUserInfo(userId: string): Promise<UserInfo> {
-        // TODO: DB,JWT 연동 후 구현
-        // 1. userId를 가진 유저가 존재하는지 DB에서 확인 후 없다면 에러처리
-        // 2. 조회된 데이터를 UserInfo타입으로 응답(리턴)
+        const user = await this.usersRepository.findOne({
+            where: { id: userId },
+        });
+        if (!user) {
+            throw new NotFoundException('유저가 존재하지 않아용');
+        }
 
-        throw new Error('Method not  implemented');
+        return { id: user.id, name: user.name, email: user.email };
     }
 }

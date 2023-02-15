@@ -1,14 +1,19 @@
+import { AuthService } from './../auth/auth.service';
 import { UsersService } from './users.service';
 import { UserLoginDto } from './dto/user-login.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Body, Controller, Post, Query, Get } from '@nestjs/common';
+import { Body, Controller, Post, Query, Get, Headers, UseGuards } from '@nestjs/common';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Param } from '@nestjs/common/decorators';
 import { UserInfo } from './dto/user-info.dto';
+import { AuthGuard } from 'src/auth.guard';
 
 @Controller('users')
 export class UsersController {
-    constructor(private readonly usersService: UsersService) {}
+    constructor(
+        private readonly usersService: UsersService,
+        private readonly authService: AuthService,
+    ) {}
     /**
      * 회원가입
      * @param dto
@@ -35,9 +40,10 @@ export class UsersController {
      * @param dto
      * @returns
      */
-    @Post()
+    @Post('/login')
     async login(@Body() dto: UserLoginDto): Promise<string> {
         const { email, password } = dto;
+
         return await this.usersService.login(email, password);
     }
 
@@ -46,8 +52,17 @@ export class UsersController {
      * @param userId
      * @returns
      */
+    // @Get('/:id')
+    // async getUserInfo(@Headers() headers: any, @Param('id') userId: string): Promise<UserInfo> {
+    //     const jwtString = headers.authorization.split(' ')[1];
+    //     this.authService.verify(jwtString);
+    //     return await this.usersService.getUserInfo(userId);
+    // }
+    @UseGuards(AuthGuard)
     @Get('/:id')
-    async getUserInfo(@Param('id') userId: string): Promise<UserInfo> {
+    async getUserInfo(@Headers() headers: any, @Param('id') userId: string): Promise<UserInfo> {
+        const jwtString = headers.authorization.split(' ')[1];
+        this.authService.verify(jwtString);
         return await this.usersService.getUserInfo(userId);
     }
 }
