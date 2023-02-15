@@ -2,24 +2,50 @@ import { AuthService } from './../auth/auth.service';
 import { UsersService } from './users.service';
 import { UserLoginDto } from './dto/user-login.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Body, Controller, Post, Query, Get, Headers, UseGuards } from '@nestjs/common';
+import {
+    Logger,
+    LoggerService,
+    Inject,
+    Body,
+    Controller,
+    Post,
+    Query,
+    Get,
+    Headers,
+    UseGuards,
+    InternalServerErrorException,
+} from '@nestjs/common';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Param } from '@nestjs/common/decorators';
 import { UserInfo } from './dto/user-info.dto';
 import { AuthGuard } from 'src/auth.guard';
-
 @Controller('users')
 export class UsersController {
     constructor(
         private readonly usersService: UsersService,
         private readonly authService: AuthService,
+        @Inject(Logger) private readonly logger: LoggerService,
     ) {}
+
+    // private printLoggerServiceLog(dto) {
+    //     try {
+    //         throw new InternalServerErrorException('test');
+    //     } catch (e) {
+    //         this.logger.error('error: ' + JSON.stringify(dto), e.stack);
+    //     }
+    //     this.logger.warn('warn: ' + JSON.stringify(dto));
+    //     this.logger.log('log: ' + JSON.stringify(dto));
+    //     this.logger.verbose('verbose: ' + JSON.stringify(dto));
+    //     this.logger.debug('debug: ' + JSON.stringify(dto));
+    // }
+
     /**
      * 회원가입
      * @param dto
      */
     @Post()
     async createUser(@Body() dto: CreateUserDto): Promise<void> {
+        // this.printLoggerServiceLog(dto);
         const { name, email, password } = dto;
         await this.usersService.createUser(name, email, password);
     }

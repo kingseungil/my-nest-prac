@@ -6,6 +6,8 @@ import emailConfig from './config/emailConfig';
 import { validationSchema } from './config/validationSchema';
 import { UserEntity } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
+import * as winston from 'winston';
+import { utilities as nestWinstonModuleUtilities, WinstonModule } from 'nest-winston';
 
 @Module({
     imports: [
@@ -27,6 +29,17 @@ import { UsersModule } from './users/users.module';
             entities: [UserEntity],
             synchronize: true,
             logging: true,
+        }),
+        WinstonModule.forRoot({
+            transports: [
+                new winston.transports.Console({
+                    level: process.env.NODE_ENV === 'production' ? 'info' : 'silly',
+                    format: winston.format.combine(
+                        winston.format.timestamp(),
+                        nestWinstonModuleUtilities.format.nestLike('MyApp', { prettyPrint: true }),
+                    ),
+                }),
+            ],
         }),
     ],
     controllers: [],
