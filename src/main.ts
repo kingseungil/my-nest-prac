@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import * as winston from 'winston';
 import { utilities as nestWinstonModuleUtilities, WinstonModule } from 'nest-winston';
+import { HttpExceptionFilter } from './exception/http-exception.filter';
 
 // dotenv를 이용한 설정
 // import * as dotenv from 'dotenv';
@@ -38,6 +39,7 @@ async function bootstrap() {
             transform: true,
         }),
     );
+    app.useGlobalFilters(new HttpExceptionFilter());
     await app.listen(3000);
 }
 bootstrap();
